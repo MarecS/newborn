@@ -177,6 +177,127 @@
             color: #b45309;
         }
 
+        .feeding-section {
+            margin-top: 25px;
+            padding: 20px;
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            border-radius: 12px;
+            border-left: 4px solid #22c55e;
+        }
+
+        .feeding-section h3 {
+            color: #14532d;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .add-feeding-form {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .add-feeding-form input {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .add-feeding-btn {
+            padding: 12px 20px;
+            background: #22c55e;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+
+        .add-feeding-btn:hover {
+            background: #16a34a;
+        }
+
+        .feeding-history {
+            margin-top: 15px;
+        }
+
+        .feeding-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .feeding-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .feeding-amount {
+            font-size: 18px;
+            font-weight: 700;
+            color: #15803d;
+        }
+
+        .feeding-time {
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .delete-feeding-btn {
+            padding: 6px 12px;
+            background: #fee2e2;
+            color: #991b1b;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .delete-feeding-btn:hover {
+            background: #fecaca;
+        }
+
+        .feeding-summary {
+            margin-top: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .summary-row:last-child {
+            border-bottom: none;
+            padding-top: 12px;
+            margin-top: 8px;
+            border-top: 2px solid #22c55e;
+        }
+
+        .summary-label {
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .summary-value {
+            font-weight: 700;
+            color: #15803d;
+        }
+
         @media (max-width: 600px) {
             body {
                 padding: 15px;
@@ -192,6 +313,14 @@
 
             .result-value {
                 font-size: 16px;
+            }
+
+            .add-feeding-form {
+                flex-direction: column;
+            }
+
+            .add-feeding-btn {
+                width: 100%;
             }
         }
     </style>
@@ -226,7 +355,8 @@
             babies.push({
                 id: Date.now(),
                 weight: '',
-                feedings: 6
+                feedings: 6,
+                feedingHistory: []
             });
             saveData();
             render();
@@ -242,6 +372,37 @@
             const baby = babies.find(b => b.id === id);
             if (baby) {
                 baby[field] = value;
+                saveData();
+                render();
+            }
+        }
+
+        function addFeeding(id) {
+            const input = document.getElementById(`feeding-input-${id}`);
+            const amount = parseFloat(input.value);
+            
+            if (!amount || amount <= 0) {
+                alert('Zadajte platnú hodnotu');
+                return;
+            }
+
+            const baby = babies.find(b => b.id === id);
+            if (baby) {
+                baby.feedingHistory.unshift({
+                    id: Date.now(),
+                    amount: amount,
+                    timestamp: new Date().toISOString()
+                });
+                input.value = '';
+                saveData();
+                render();
+            }
+        }
+
+        function deleteFeeding(babyId, feedingId) {
+            const baby = babies.find(b => b.id === babyId);
+            if (baby) {
+                baby.feedingHistory = baby.feedingHistory.filter(f => f.id !== feedingId);
                 saveData();
                 render();
             }
@@ -265,6 +426,37 @@
             };
         }
 
+        function calculateFeedingSummary(feedingHistory, feedingsPerDay) {
+            const lastN = feedingHistory.slice(0, feedingsPerDay);
+            const totalLastN = lastN.reduce((sum, f) => sum + f.amount, 0);
+            const totalAll = feedingHistory.reduce((sum, f) => sum + f.amount, 0);
+            
+            return {
+                lastNCount: lastN.length,
+                totalLastN: totalLastN.toFixed(0),
+                totalAll: totalAll.toFixed(0),
+                totalCount: feedingHistory.length,
+                feedingsPerDay: feedingsPerDay
+            };
+        }
+
+        function formatTime(isoString) {
+            const date = new Date(isoString);
+            const today = new Date();
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+
+            const timeStr = date.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });
+            
+            if (date.toDateString() === today.toDateString()) {
+                return `Dnes ${timeStr}`;
+            } else if (date.toDateString() === yesterday.toDateString()) {
+                return `Včera ${timeStr}`;
+            } else {
+                return date.toLocaleDateString('sk-SK', { day: '2-digit', month: '2-digit' }) + ' ' + timeStr;
+            }
+        }
+
         function render() {
             const container = document.getElementById('babies-container');
             container.innerHTML = '';
@@ -274,6 +466,7 @@
                 card.className = 'baby-card';
 
                 const results = calculate(baby.weight, baby.feedings);
+                const summary = calculateFeedingSummary(baby.feedingHistory || []);
 
                 card.innerHTML = `
                     <div class="baby-header">
@@ -317,6 +510,49 @@
                             </div>
                         </div>
                     ` : ''}
+
+                    <div class="feeding-section">
+                        <h3>📊 Záznam kŕmenia</h3>
+                        
+                        <div class="add-feeding-form">
+                            <input type="number" 
+                                   id="feeding-input-${baby.id}" 
+                                   step="1" 
+                                   min="0" 
+                                   placeholder="Koľko vypilo (ml)?"
+                                   onkeypress="if(event.key === 'Enter') addFeeding(${baby.id})">
+                            <button class="add-feeding-btn" onclick="addFeeding(${baby.id})">✅ Pridať</button>
+                        </div>
+
+                        ${baby.feedingHistory && baby.feedingHistory.length > 0 ? `
+                            <div class="feeding-summary">
+                                <div class="summary-row">
+                                    <span class="summary-label">Posledných 6 kŕmení:</span>
+                                    <span class="summary-value">${summary.totalLast6} ml</span>
+                                </div>
+                                <div class="summary-row">
+                                    <span class="summary-label">Počet kŕmení (posledných 6):</span>
+                                    <span class="summary-value">${summary.last6Count}x</span>
+                                </div>
+                                <div class="summary-row">
+                                    <span class="summary-label">Celkovo všetky kŕmenia:</span>
+                                    <span class="summary-value">${summary.totalAll} ml (${summary.totalCount}x)</span>
+                                </div>
+                            </div>
+
+                            <div class="feeding-history">
+                                ${baby.feedingHistory.map(feeding => `
+                                    <div class="feeding-item">
+                                        <div class="feeding-info">
+                                            <div class="feeding-amount">${feeding.amount} ml</div>
+                                            <div class="feeding-time">${formatTime(feeding.timestamp)}</div>
+                                        </div>
+                                        <button class="delete-feeding-btn" onclick="deleteFeeding(${baby.id}, ${feeding.id})">✕</button>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : '<p style="text-align: center; color: #6b7280; padding: 20px 0;">Zatiaľ žiadne záznamy</p>'}
+                    </div>
                 `;
 
                 container.appendChild(card);
