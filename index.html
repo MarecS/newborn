@@ -540,9 +540,16 @@
 
                 card.innerHTML = `
                     <div class="baby-header">
-                        <div class="baby-title">Dieťa ${index + 1}</div>
+                        <input 
+                            class="baby-name-input"
+                            type="text"
+                            value="${baby.name}"
+                            onchange="updateBaby(${baby.id}, 'name', this.value)"
+                            placeholder="Meno dieťaťa"
+                        >
                         ${babies.length > 1 ? `<button class="remove-btn" onclick="removeBaby(${baby.id})">🗑️ Odstrániť</button>` : ''}
                     </div>
+
 
                     <div class="input-group">
                         <label>Váha dieťaťa (kg):</label>
