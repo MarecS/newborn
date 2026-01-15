@@ -427,15 +427,15 @@
         }
 
         function calculateFeedingSummary(feedingHistory, feedingsPerDay) {
+            if (!feedingHistory || feedingHistory.length === 0) {
+                return null;
+            }
             const lastN = feedingHistory.slice(0, feedingsPerDay);
             const totalLastN = lastN.reduce((sum, f) => sum + f.amount, 0);
-            const totalAll = feedingHistory.reduce((sum, f) => sum + f.amount, 0);
             
             return {
                 lastNCount: lastN.length,
                 totalLastN: totalLastN.toFixed(0),
-                totalAll: totalAll.toFixed(0),
-                totalCount: feedingHistory.length,
                 feedingsPerDay: feedingsPerDay
             };
         }
@@ -466,7 +466,7 @@
                 card.className = 'baby-card';
 
                 const results = calculate(baby.weight, baby.feedings);
-                const summary = calculateFeedingSummary(baby.feedingHistory || []);
+                const summary = calculateFeedingSummary(baby.feedingHistory || [], baby.feedings);
 
                 card.innerHTML = `
                     <div class="baby-header">
@@ -525,20 +525,14 @@
                         </div>
 
                         ${baby.feedingHistory && baby.feedingHistory.length > 0 ? `
-                            <div class="feeding-summary">
-                                <div class="summary-row">
-                                    <span class="summary-label">Posledných 6 kŕmení:</span>
-                                    <span class="summary-value">${summary.totalLast6} ml</span>
+                            ${summary ? `
+                                <div class="feeding-summary">
+                                    <div class="summary-row">
+                                        <span class="summary-label">Posledných ${summary.feedingsPerDay} kŕmení:</span>
+                                        <span class="summary-value">${summary.totalLastN} ml (${summary.lastNCount}x)</span>
+                                    </div>
                                 </div>
-                                <div class="summary-row">
-                                    <span class="summary-label">Počet kŕmení (posledných 6):</span>
-                                    <span class="summary-value">${summary.last6Count}x</span>
-                                </div>
-                                <div class="summary-row">
-                                    <span class="summary-label">Celkovo všetky kŕmenia:</span>
-                                    <span class="summary-value">${summary.totalAll} ml (${summary.totalCount}x)</span>
-                                </div>
-                            </div>
+                            ` : ''}
 
                             <div class="feeding-history">
                                 ${baby.feedingHistory.map(feeding => `
